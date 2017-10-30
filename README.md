@@ -66,10 +66,10 @@ We can see the message _"Success! Your particle filter passed!"_ which means we 
 The final accuracy and time values are given in the table below: 
 
 |Particle #| x (m)| y (m) | yaw (rad) | time (s) |
-|:--------:|:----:|:----:|:----: |
+|:--------:|:----:|:-----:|:---------:|:--------:|
 |10|0.141|0.124|0.005|48.90|
-|100|0.113|0.104|0.004| 49.62
-|1000|0.109|0.100|0.003| 145.62
+|100|0.113|0.104|0.004| 49.62|
+|1000|0.109|0.100|0.003| 145.62|
 
 Obviously the accuracy increases with the number of particles, but at the expense of simulation time. For 1000 particles, the time criteria fails.
 
