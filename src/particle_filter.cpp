@@ -49,9 +49,10 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
         particle.theta = dist_theta(gen);
         particle.weight = 1;
         particles_.push_back(particle);
+        weights_.push_back(1);
     };
     is_initialized_ = true;
-    cout << "x_i:" << particles_[0].x << " y_i:" << particles_[0].y << " thteta_i:" << particles_[0].theta<<endl;
+    cout << "x_i:" << particles_[0].x << " y_i:" << particles_[0].y << " theta_i:" << particles_[0].theta<<endl;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
@@ -60,7 +61,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
-	cout << "PREDICTION" << endl;
+	//cout << "PREDICTION" << endl;
     default_random_engine gen;
 	double std_x, std_y, std_theta; // Standard deviations for x, y, and theta
 
@@ -96,7 +97,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
             particles_[i].theta = theta + yaw_rate*delta_t + dist_theta(gen);
         }
     };
-    cout << "x:" << particles_[0].x << " y:" << particles_[0].y << " thteta:" << particles_[0].theta<<endl;
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -119,7 +119,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
             }
         }
         observations[i].id = id_landmark;
-        cout << "Trans Obs: (" <<observations[i].x<<","<<observations[i].y<<")- Landmark: (" <<predicted[ind_lm].x<<","<<predicted[ind_lm].y<<")-Id:"<< id_landmark << endl;
+        //cout << "Trans Obs: (" <<observations[i].x<<","<<observations[i].y<<")- Landmark: (" <<predicted[ind_lm].x<<","<<predicted[ind_lm].y<<")-Id:"<< id_landmark << endl;
     }
 }
 
@@ -136,7 +136,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-    cout << "UPDATE" << endl;
+    //cout << "UPDATE" << endl;
 
     double weights_sum = 0; // for normalization
 
@@ -164,7 +164,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             obs.x = x_m;
             obs.y = y_m;
             observations_m.push_back(obs);
-            cout << "Obs: (" <<x_obs<<","<<y_obs<<")-> Trans obs: (" <<obs.x<<","<<obs.y<<")"<< endl;
+            //cout << "Obs: (" <<x_obs<<","<<y_obs<<")-> Trans obs: (" <<obs.x<<","<<obs.y<<")"<< endl;
         }
 
         // landmark association
@@ -185,21 +185,21 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             int id_LM = observations_m[j].id;
             float x_obs = observations_m[j].x;
             float y_obs = observations_m[j].y;
-            float x_LM = map_landmarks.landmark_list[id_LM].x_f;
-            float y_LM = map_landmarks.landmark_list[id_LM].y_f;
-            cout << "Obs: (" <<x_obs<<","<<y_obs<<") - LM: (" <<x_LM<<","<<y_LM<<")"<< endl;
-            double proba_i = 1/(2*M_PI*std_landmark[0]*std_landmark[1])*exp(-((x_obs-x_LM)*(x_obs-x_LM)/(2*std_landmark[0])+(y_obs-y_LM)*(y_obs-y_LM)/(2*std_landmark[1])));
-            cout << proba_i << endl;
+            float x_LM = map_landmarks.landmark_list[id_LM-1].x_f;  // ! Index 0 in map is ID #1 !
+            float y_LM = map_landmarks.landmark_list[id_LM-1].y_f;
+            double proba_i = 1/(2*M_PI*std_landmark[0]*std_landmark[1])*exp(-((x_obs-x_LM)*(x_obs-x_LM)/(2*std_landmark[0]*std_landmark[0])+(y_obs-y_LM)*(y_obs-y_LM)/(2*std_landmark[1]*std_landmark[1])));
+            //cout << "Obs: (" <<x_obs<<","<<y_obs<<") - LM: (" <<x_LM<<","<<y_LM<<") - p = "<< proba_i << endl;
             proba = proba*proba_i;
          }
-        weights_.push_back(proba);
+        weights_[i] = proba;
         weights_sum += proba;
-        cout << weights_[i] << endl;
+        //cout << "Proba / WS: " << proba << " / " << weights_sum << endl;
     }
     // normalization of weights
     for (int i=0; i<num_particles_; ++i){
         weights_[i] = weights_[i]/weights_sum;
         particles_[i].weight = weights_[i];
+        //cout << "Weights_:  " << weights_[i] << "/" << particles_[i].weight<<endl;
     };
 }
 
@@ -208,13 +208,16 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
+    //cout << "RESAMPLE" << endl;
+
     default_random_engine gen;
     // we need int values as input weights for discrete distribution
     // multiply by 10000 to get weights bigger than 1, then convert from float to int
     vector<double> weights;
-    for (int i=0;i<weights.size();++i){
-        double weight_i=weights_[i]*10000;
-        weights_.push_back(weight_i);
+    for (int i=0;i<num_particles_;++i){
+        double weight_i=weights_[i]*10000*num_particles_;
+        weights.push_back(weight_i);
+        //cout << "Weights:  " << weights[i] << endl;
     }
     vector<int> weights_int(weights.begin(), weights.end()); // conversion to int
 
@@ -225,6 +228,7 @@ void ParticleFilter::resample() {
         int drawn_particle_id = d(gen);
         Particle particles_new_n = particles_[drawn_particle_id];
         particles_new.push_back(particles_new_n);
+        //cout << "Particle " << n << " - x:" << particles_new_n.x << " y:" << particles_new_n.y << " theta:" << particles_new_n.theta<<" w:"<<particles_new_n.weight<<endl;
     }
     particles_ = particles_new;
 }

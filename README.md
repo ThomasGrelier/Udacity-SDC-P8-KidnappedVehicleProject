@@ -3,7 +3,8 @@
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 ## Overview
-This repository contains the work I did within **Project #8 of Udacity's Self-Driving Car Nanodegree Program** (third project of second term). Objective of this project is to **design a 2-D particle filter to localize a "kidnapped" vehicle**. Implementation is done in **C++. ** 
+This repository contains the work I did within **Project #8 of Udacity's Self-Driving Car Nanodegree Program** (third project of second term). Objective of this project is to **design a 2-D particle filter to localize a "kidnapped" vehicle**. Implementation is done in **C++**. 
+
 Vehicle state is defined by three coordinates: x, y and theta (yaw).
 The particle filter is given a map with landmarks and some initial localization information (analogous to what a GPS would provide, accuracy ~0.3m). At each time step the filter gets noisy observations (which are the positions of  some of  the landmarks, as measured by a radar or a lidar) and noisy control data (velocity and yaw rate). This data is provided by a car driving simulator that Udacity has developed (it can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases)).
 The filter predicts the new position of the car using the control data, then updates the particle weights using the noisy observations, and finally resamples the particles.
@@ -29,14 +30,14 @@ The repository includes the following files:
 Here is the main protocol that main.cpp uses for uWebSocketIO in communicating with the simulator.
 
 * INPUTS: values provided by the simulator to the c++ program
- * sense noisy position data from the simulator (used for initialization)
+	 * sense noisy position data from the simulator (used for initialization)
 		["sense_x"]
 		["sense_y"]
 		["sense_theta"]
- * get the previous velocity and yaw rate to predict the particle's transitioned state
+	 * get the previous velocity and yaw rate to predict the particle's transitioned state
 	["previous_velocity"]
 	["previous_yawrate"]
- * receive noisy observation data from the simulator, in a respective list of x/y values to update weights
+	 * receive noisy observation data from the simulator, in a respective list of x/y values to update weights
 	["sense_observations_x"]
 	["sense_observations_y"]
 
@@ -49,43 +50,28 @@ Here is the main protocol that main.cpp uses for uWebSocketIO in communicating w
 ## Success Criteria
 The simulator includes a grading code. The things the grading code is looking for are:
 
-1. **Accuracy**: the particle filter should localize vehicle position and yaw to within the values specified in the parameters `max_translation_error` and `max_yaw_error` in `src/main.cpp`.
-
+1. **Accuracy**: the particle filter should localize vehicle position and yaw to within the values specified in the parameters `max_translation_error` and `max_yaw_error`.
+	
 2. **Performance**: the particle filter should complete execution within the time of 100 seconds.
 
 
 ## Results
+Running the simulator we can see the path that the car drives along with all of its landmark measurments. The figures below represent the simulator at the end of the simulation. The car represents the true position of the tracked object. Landmarks are represented by black circled crosses and lidar measurements by green segments. The position estimated by the particle filter is the blue circle. 
 
-The figure below represents the simulator. The car represents the true position of the tracked object. Lidar measurements are represented by red circles, radar measurements by blue circles with an arrow pointing in the direction of the observed angle, and UKF position estimation by green triangles. We can see that UKF makes a good job in filtering radar and lidar measurements.
+![simulator](./results_10p.png)
 
-![simulator](./simulator.png)
+Final position error (x,y,yaw) is mentioned as well as time step and system time.
 
-On the right and side of the simulator, values of RMSE (root mean square error) for position (x,y) and velocity (vx,vy) are displayed. Here they are the results of processing both radar and lidar measurements. 
-I also provide the performance of the UKF with radar-only and  lidar-only measurements. Final RMSE are given in the table below:
+We can see the message _"Success! Your particle filter passed!"_ which means we met the accuracy and time criteria . This figure is the result of the simulation of a filter with 10 particles. I also tested the filter for 100 and 1000 particles. 
+The final accuracy and time values are given in the table below: 
+|Particle #| x (m)| y (m) | yaw (rad) | time (s) |
+|:--------:|:----:|:----:|:----: |
+|10|0.141|0.124|0.005|48.90|
+|100|0.113|0.104|0.004| 49.62
+|1000|0.109|0.100|0.003| 145.62
 
-|Type / RMSE|Px|Py |Vx |Vy|
-|:--------:|:----:|:----:|:----: |:----: |
-|Radar only|0.145|0.213|0.186|0.279|
-|Lidar only|0.089|0.096|0.208|0.224|
-|Radar+Lidar|0.065|0.083|0.159|0.212|
+Obviously the accuracy increases with the number of particles, but at the expense of simulation time. For 1000 particles, the time criteria fails.
 
-Below we recall the performance obtained with the EKF (cf. [P6-ExtendedKalmanFilter project](https://github.com/ThomasGrelier/Udacity-SDC-P6-ExtendedKalmanFilter)
 
-|Type / RMSE|Px|Py |Vx |Vy|
-|:--------:|:----:|:----:|:----: |:----: |
-|Radar only|0.23|0.34|0.58|0.80|
-|Lidar only|0.14|0.12|0.63|0.53|
-|Radar+Lidar|0.09|0.09|0.45|0.43|
-
-And in the table below we provide the accuracy improvement in %.
-
-|Type / RMSE|Px|Py |Vx |Vy|
-|:--------:|:----:|:----:|:----: |:----: |
-|Radar only|37.0|37.4|68.0|65.0|
-|Lidar only|36.4|20.0|67.0|58.7|
-|Radar+Lidar|27.8|7.8|64.7|50.7|
-
-We see that improvement is really significant, especially for the velocity with improvement up to 65%.
-The added-value of UKF is more important on LIDAR-only or RADAR-only based KF than on mixed KF.
 
 

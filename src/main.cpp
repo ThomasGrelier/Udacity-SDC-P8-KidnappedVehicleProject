@@ -33,9 +33,9 @@ int main()
   double delta_t = 0.1; // Time elapsed between measurements [sec]
   double sensor_range = 50; // Sensor range [m]
 
-  //double sigma_pos [3] = {0.3, 0.3, 0.01}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
+  double sigma_pos [3] = {0.3, 0.3, 0.01}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
   double sigma_landmark [2] = {0.3, 0.3}; // Landmark measurement uncertainty [x [m], y [m]]
-  double sigma_pos [3] = {0, 0, 0}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
+  double sigma_control [3] = {0.3, 0.3, 0.01}; // process noise [x [m], y [m], theta [rad]]
 
 
   // Read map data
@@ -46,10 +46,10 @@ int main()
   }
 
   // Create particle filter
-  int N = 1;  // nb particles
+  int N = 100;  // nb particles
   ParticleFilter pf(N);
 
-  h.onMessage([&pf,&map,&delta_t,&sensor_range,&sigma_pos,&sigma_landmark](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pf,&map,&delta_t,&sensor_range,&sigma_pos,&sigma_landmark,&sigma_control](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -75,7 +75,7 @@ int main()
 			double sense_y = std::stod(j[1]["sense_y"].get<std::string>());
 			double sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
 			pf.init(sense_x, sense_y, sense_theta, sigma_pos);
-            cout << "x_t:" << sense_x << " y_t:" << sense_y << " theta_t:" << sense_theta<<endl;
+            //cout << "x_t:" << sense_x << " y_t:" << sense_y << " theta_t:" << sense_theta<<endl;
 		  }
 		  else {
 			// Predict the vehicle's next state from previous (noiseless control) data.
@@ -85,9 +85,9 @@ int main()
 			double sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
 		  	double previous_velocity = std::stod(j[1]["previous_velocity"].get<std::string>());
 			double previous_yawrate = std::stod(j[1]["previous_yawrate"].get<std::string>());
-			pf.prediction(delta_t, sigma_pos, previous_velocity, previous_yawrate);
             //cout << "v:" << previous_velocity << " y_r:" << previous_yawrate <<endl;
-            cout << "x_t:" << sense_x << " y_t:" << sense_y << " theta_t:" << sense_theta<<endl;
+            //cout << "x_t:" << sense_x << " y_t:" << sense_y << " theta_t:" << sense_theta<<endl;
+			pf.prediction(delta_t, sigma_control, previous_velocity, previous_yawrate);
 		  }
 
 		  // receive noisy observation data from the simulator
@@ -119,7 +119,7 @@ int main()
 
 		  // Update the weights and resample
 		  pf.updateWeights(sensor_range, sigma_landmark, noisy_observations, map);
-		  //pf.resample();
+		  pf.resample();
 
 		  // Calculate and output the average weighted error of the particle filter over all time steps so far.
 		  vector<Particle> particles = pf.particles_;
@@ -128,8 +128,7 @@ int main()
 		  Particle best_particle;
 		  double weight_sum = 0.0;
 		  for (int i = 0; i < num_particles; ++i) {
-            cout << particles[i].weight << endl;
-			if (particles[i].weight > highest_weight) {
+            if (particles[i].weight > highest_weight) {
 				highest_weight = particles[i].weight;
 				best_particle = particles[i];
 			}
@@ -137,6 +136,7 @@ int main()
 		  }
 		  cout << "highest w " << highest_weight << endl;
 		  cout << "average w " << weight_sum/num_particles << endl;
+		  cout << "Highest particle : x=" << best_particle.x << ", y=" << best_particle.y << ", theta:" << best_particle.theta<<endl;
 
           json msgJson;
           msgJson["best_particle_x"] = best_particle.x;
@@ -149,7 +149,7 @@ int main()
           msgJson["best_particle_sense_y"] = pf.getSenseY(best_particle);
 
           auto msg = "42[\"best_particle\"," + msgJson.dump() + "]";
-          // std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
         }
