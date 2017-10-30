@@ -64,6 +64,7 @@ Final position error (x,y,yaw) is mentioned as well as time step and system time
 
 We can see the message _"Success! Your particle filter passed!"_ which means we met the accuracy and time criteria . This figure is the result of the simulation of a filter with 10 particles. I also tested the filter for 100 and 1000 particles. 
 The final accuracy and time values are given in the table below: 
+
 |Particle #| x (m)| y (m) | yaw (rad) | time (s) |
 |:--------:|:----:|:----:|:----: |
 |10|0.141|0.124|0.005|48.90|
